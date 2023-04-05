@@ -53,7 +53,6 @@ static int all_msg_size;// Size of all the messages written to the device
  */
 static int open(struct inode *, struct file *);
 static int close(struct inode *, struct file *);
-static ssize_t read(struct file *, char *, size_t, loff_t *);
 static ssize_t write(struct file *, const char *, size_t, loff_t *);
 
 /**
@@ -159,41 +158,6 @@ static int close(struct inode *inodep, struct file *filep)
 
 	kfree(q);
 	return SUCCESS;
-}
-
-/*
- * Reads from device, displays in userspace, and deletes the read data
- */
-static ssize_t read(struct file *filep, char *buffer, size_t len, loff_t *offset)
-{
-	// Send the message to user space, and store the number of bytes that could not be copied
-	// On success, this should be zero.
-	int uncopied_bytes = copy_to_user(buffer, q->top->msg, q->top->msg_size);
-	struct msgs *ptr = kmalloc(sizeof(struct msgs), GFP_KERNEL);
-
-	// If the message was successfully sent to user space, report this
-	// to the kernel and return success.
-	if (uncopied_bytes == 0)
-	{
-		if (q->top != NULL)
-		{
-			ptr = q->top;
-			q->top = q->top->next;
-			if (q->top == NULL)
-			{
-				q->bottom = NULL;
-			}
-			ptr->next = NULL;
-      			all_msg_size -= ptr->msg_size;
-			kfree(ptr);
-		}		
-		printk(KERN_INFO "pa2_in: read stub");
-		return SUCCESS;
-	}
-
-	// Return with an error indicating bad address if we cannot copy the message to user space.
-	printk(KERN_INFO "pa2_in: failed to read stub");
-	return -EFAULT;
 }
 
 /*

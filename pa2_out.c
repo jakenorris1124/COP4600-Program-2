@@ -12,6 +12,7 @@
 #include <linux/uaccess.h>	  // User access copy function support.
 #include <linux/slab.h>
 #include <linux/gfp.h>
+#include "pa2_in.c"
 
 #define DEVICE_NAME "pa2_out" // Device name.
 #define CLASS_NAME "char"	  ///< The device class -- this is a character device driver
@@ -32,29 +33,14 @@ static int device_open = 0; // Boolean to track whether the device is open
 static struct class *pa2_outClass = NULL;	///< The device-driver class struct pointer
 static struct device *pa2_outDevice = NULL; ///< The device-driver device struct pointer
 
-static struct msgs
-{
-    char *msg;
-    int msg_size;
-    struct msgs *next;
-};
-
-static struct queue
-{
-    struct msgs *top;
-    struct msgs *bottom;
-}*q;
-
-//static char msg[BUF_LEN]; // Message the device will give when asked
-//static int msg_size; // Size of the message written to the device
-static int all_msg_size;// Size of all the messages written to the device
+extern struct queue *q;
+extern static int all_msg_size; // Size of all the messages written to the device
 /**
  * Prototype functions for file operations.
  */
 static int open(struct inode *, struct file *);
 static int close(struct inode *, struct file *);
 static ssize_t read(struct file *, char *, size_t, loff_t *);
-static ssize_t write(struct file *, const char *, size_t, loff_t *);
 
 /**
  * File operations structure and the functions it points to.
@@ -135,9 +121,11 @@ static int open(struct inode *inodep, struct file *filep)
 		return -EBUSY;
 	}
 
-	q = kmalloc(sizeof(struct queue), GFP_KERNEL);
-
-	all_msg_size = 0;
+	if (q == NULL)
+	{
+		printk(KERN_INFO "pa2_out: input device has not been intialized.")
+		return -ESRCH
+	}
 	// Increment to indicate we have now opened the device
 	device_open++;
 
@@ -194,58 +182,4 @@ static ssize_t read(struct file *filep, char *buffer, size_t len, loff_t *offset
 	// Return with an error indicating bad address if we cannot copy the message to user space.
 	printk(KERN_INFO "pa2_out: failed to read stub");
 	return -EFAULT;
-}
-
-/*
- * Writes to the device
- */
-static ssize_t write(struct file *filep, const char *buffer, size_t len, loff_t *offset)
-{
-	// If the file is larger than the amount of bytes the device can hold, return an error.
-	int remaining_bytes = -1;
-	if ((len + all_msg_size) > BUF_LEN)
-	{
-		remaining_bytes = BUF_LEN - all_msg_size;
-	}
-
-	if (all_msg_size == 0){
-		q->top = NULL;
-		q->bottom = NULL;
-	}
-
-	// Write the input to the device, and update the length of the message.
-	// Work as a FIFO queue, so that multiple messages can be stored.
-	struct msgs *ptr = kmalloc(sizeof(struct msgs), GFP_KERNEL);
-
-	if (remaining_bytes == -1)
-	{
-		int msg_mem_size = (len + 1) * sizeof(char);
-		ptr->msg = kmalloc(msg_mem_size, GFP_KERNEL);
-		sprintf(ptr->msg, "%s", buffer);
-	}
-	else
-	{
-		int msg_mem_size = (remaining_bytes + 1) * sizeof(char);
-		ptr->msg = kmalloc(msg_mem_size, GFP_KERNEL);
-		sprintf(ptr->msg, "%.*s", remaining_bytes, buffer);
-	}
-
-
-	ptr->msg_size = len + 1;
-	all_msg_size += len +1;
-
-	ptr->next=NULL;
-	if (q->top==NULL && q->bottom==NULL)
-	{
-		q->top = q->bottom = ptr;
-	}
-	else
-	{
-		q->bottom->next=ptr;
-		q->bottom=ptr;
-	}
-
-	// Return success upon writing the message to the device without error, and report it to the kernel.
-	printk(KERN_INFO "pa2_out: write stub");
-	return SUCCESS;
 }

@@ -1,5 +1,5 @@
 /**
- * File:	lkmasg1.c
+ * File:	pa2_out.c
  * Adapted for Linux 5.15 by: John Aedo
  * Forked by: Jake Norris and D'Antae Aronne
  * Class:	COP4600-SP23
@@ -13,14 +13,14 @@
 #include <linux/slab.h>
 #include <linux/gfp.h>
 
-#define DEVICE_NAME "lkmasg1" // Device name.
+#define DEVICE_NAME "pa2_out" // Device name.
 #define CLASS_NAME "char"	  ///< The device class -- this is a character device driver
 #define SUCCESS 0
 #define BUF_LEN 1024          // Max length of a message
 
 MODULE_LICENSE("GPL");						 ///< The license type -- this affects available functionality
 MODULE_AUTHOR("John Aedo");					 ///< The author -- visible when you use modinfo
-MODULE_DESCRIPTION("lkmasg1 Kernel Module"); ///< The description -- see modinfo
+MODULE_DESCRIPTION("pa2_out Kernel Module"); ///< The description -- see modinfo
 MODULE_VERSION("0.1");						 ///< A version number to inform users
 
 /**
@@ -29,8 +29,8 @@ MODULE_VERSION("0.1");						 ///< A version number to inform users
 static int major_number; // Stores the major number of the device driver
 static int device_open = 0; // Boolean to track whether the device is open
 
-static struct class *lkmasg1Class = NULL;	///< The device-driver class struct pointer
-static struct device *lkmasg1Device = NULL; ///< The device-driver device struct pointer
+static struct class *pa2_outClass = NULL;	///< The device-driver class struct pointer
+static struct device *pa2_outDevice = NULL; ///< The device-driver device struct pointer
 
 static struct msgs
 {
@@ -73,37 +73,37 @@ static struct file_operations fops =
  */
 int init_module(void)
 {
-	printk(KERN_INFO "lkmasg1: installing module.\n");
+	printk(KERN_INFO "pa2_out: installing module.\n");
 
 	// Allocate a major number for the device.
 	major_number = register_chrdev(0, DEVICE_NAME, &fops);
 	if (major_number < 0)
 	{
-		printk(KERN_ALERT "lkmasg1 could not register number.\n");
+		printk(KERN_ALERT "pa2_out could not register number.\n");
 		return major_number;
 	}
-	printk(KERN_INFO "lkmasg1: registered correctly with major number %d\n", major_number);
+	printk(KERN_INFO "pa2_out: registered correctly with major number %d\n", major_number);
 
 	// Register the device class
-	lkmasg1Class = class_create(THIS_MODULE, CLASS_NAME);
-	if (IS_ERR(lkmasg1Class))
+	pa2_outClass = class_create(THIS_MODULE, CLASS_NAME);
+	if (IS_ERR(pa2_outClass))
 	{ // Check for error and clean up if there is
 		unregister_chrdev(major_number, DEVICE_NAME);
 		printk(KERN_ALERT "Failed to register device class\n");
-		return PTR_ERR(lkmasg1Class); // Correct way to return an error on a pointer
+		return PTR_ERR(pa2_outClass); // Correct way to return an error on a pointer
 	}
-	printk(KERN_INFO "lkmasg1: device class registered correctly\n");
+	printk(KERN_INFO "pa2_out: device class registered correctly\n");
 
 	// Register the device driver
-	lkmasg1Device = device_create(lkmasg1Class, NULL, MKDEV(major_number, 0), NULL, DEVICE_NAME);
-	if (IS_ERR(lkmasg1Device))
+	pa2_outDevice = device_create(pa2_outClass, NULL, MKDEV(major_number, 0), NULL, DEVICE_NAME);
+	if (IS_ERR(pa2_outDevice))
 	{								 // Clean up if there is an error
-		class_destroy(lkmasg1Class); // Repeated code but the alternative is goto statements
+		class_destroy(pa2_outClass); // Repeated code but the alternative is goto statements
 		unregister_chrdev(major_number, DEVICE_NAME);
 		printk(KERN_ALERT "Failed to create the device\n");
-		return PTR_ERR(lkmasg1Device);
+		return PTR_ERR(pa2_outDevice);
 	}
-	printk(KERN_INFO "lkmasg1: device class created correctly\n"); // Made it! device was initialized
+	printk(KERN_INFO "pa2_out: device class created correctly\n"); // Made it! device was initialized
 
 	return SUCCESS;
 }
@@ -113,12 +113,12 @@ int init_module(void)
  */
 void cleanup_module(void)
 {
-	printk(KERN_INFO "lkmasg1: removing module.\n");
-	device_destroy(lkmasg1Class, MKDEV(major_number, 0)); // remove the device
-	class_unregister(lkmasg1Class);						  // unregister the device class
-	class_destroy(lkmasg1Class);						  // remove the device class
+	printk(KERN_INFO "pa2_out: removing module.\n");
+	device_destroy(pa2_outClass, MKDEV(major_number, 0)); // remove the device
+	class_unregister(pa2_outClass);						  // unregister the device class
+	class_destroy(pa2_outClass);						  // remove the device class
 	unregister_chrdev(major_number, DEVICE_NAME);		  // unregister the major number
-	printk(KERN_INFO "lkmasg1: Goodbye from the LKM!\n");
+	printk(KERN_INFO "pa2_out: Goodbye from the LKM!\n");
 	unregister_chrdev(major_number, DEVICE_NAME);
 	return;
 }
@@ -131,7 +131,7 @@ static int open(struct inode *inodep, struct file *filep)
 	// Return an error if the device is already open, and report to the kernel.
 	if (device_open)
 	{
-		printk(KERN_INFO "lkmasg1: device is busy.\n");
+		printk(KERN_INFO "pa2_out: device is busy.\n");
 		return -EBUSY;
 	}
 
@@ -142,7 +142,7 @@ static int open(struct inode *inodep, struct file *filep)
 	device_open++;
 
 	// Return success upon opening the device without error, and report to the kernel.
-	printk(KERN_INFO "lkmasg1: device opened.\n");
+	printk(KERN_INFO "pa2_out: device opened.\n");
 	return SUCCESS;
 }
 
@@ -155,7 +155,7 @@ static int close(struct inode *inodep, struct file *filep)
 	device_open--;
 
 	// Return success upon opening the device without error, and report it to the kernel.
-	printk(KERN_INFO "lkmasg1: device closed.\n");
+	printk(KERN_INFO "pa2_out: device closed.\n");
 
 	kfree(q);
 	return SUCCESS;
@@ -187,12 +187,12 @@ static ssize_t read(struct file *filep, char *buffer, size_t len, loff_t *offset
       			all_msg_size -= ptr->msg_size;
 			kfree(ptr);
 		}		
-		printk(KERN_INFO "lkmasg1: read stub");
+		printk(KERN_INFO "pa2_out: read stub");
 		return SUCCESS;
 	}
 
 	// Return with an error indicating bad address if we cannot copy the message to user space.
-	printk(KERN_INFO "lkmasg1: failed to read stub");
+	printk(KERN_INFO "pa2_out: failed to read stub");
 	return -EFAULT;
 }
 
@@ -246,6 +246,6 @@ static ssize_t write(struct file *filep, const char *buffer, size_t len, loff_t 
 	}
 
 	// Return success upon writing the message to the device without error, and report it to the kernel.
-	printk(KERN_INFO "lkmasg1: write stub");
+	printk(KERN_INFO "pa2_out: write stub");
 	return SUCCESS;
 }

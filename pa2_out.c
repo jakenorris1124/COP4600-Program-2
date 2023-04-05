@@ -121,11 +121,13 @@ static int open(struct inode *inodep, struct file *filep)
 		return -EBUSY;
 	}
 
+	/*---------- Critical Section Start ----------*/
 	if (q == NULL)
 	{
 		printk(KERN_INFO "pa2_out: input device has not been intialized.")
 		return -ESRCH
 	}
+	/*---------- Critical Section End ----------*/
 	// Increment to indicate we have now opened the device
 	device_open++;
 
@@ -145,7 +147,9 @@ static int close(struct inode *inodep, struct file *filep)
 	// Return success upon opening the device without error, and report it to the kernel.
 	printk(KERN_INFO "pa2_out: device closed.\n");
 
+	/*---------- Critical Section Start ----------*/
 	kfree(q);
+	/*---------- Critical Section End ----------*/
 	return SUCCESS;
 }
 
@@ -156,13 +160,16 @@ static ssize_t read(struct file *filep, char *buffer, size_t len, loff_t *offset
 {
 	// Send the message to user space, and store the number of bytes that could not be copied
 	// On success, this should be zero.
+	/*---------- Critical Section Start ----------*/
 	int uncopied_bytes = copy_to_user(buffer, q->top->msg, q->top->msg_size);
+	/*---------- Critical Section End ----------*/
 	struct msgs *ptr = kmalloc(sizeof(struct msgs), GFP_KERNEL);
 
 	// If the message was successfully sent to user space, report this
 	// to the kernel and return success.
 	if (uncopied_bytes == 0)
 	{
+		/*---------- Critical Section Start ----------*/
 		if (q->top != NULL)
 		{
 			ptr = q->top;
@@ -174,7 +181,8 @@ static ssize_t read(struct file *filep, char *buffer, size_t len, loff_t *offset
 			ptr->next = NULL;
       			all_msg_size -= ptr->msg_size;
 			kfree(ptr);
-		}		
+		}
+		/*---------- Critical Section End ----------*/		
 		printk(KERN_INFO "pa2_out: read stub");
 		return SUCCESS;
 	}

@@ -133,10 +133,13 @@ static int open(struct inode *inodep, struct file *filep)
 		printk(KERN_INFO "pa2_in: device is busy.\n");
 		return -EBUSY;
 	}
-
+	
+	/*---------- Critical Section Start ----------*/
 	q = kmalloc(sizeof(struct queue), GFP_KERNEL);
 
 	all_msg_size = 0;
+	/*---------- Critical Section End ----------*/
+	
 	// Increment to indicate we have now opened the device
 	device_open++;
 
@@ -156,7 +159,9 @@ static int close(struct inode *inodep, struct file *filep)
 	// Return success upon opening the device without error, and report it to the kernel.
 	printk(KERN_INFO "pa2_in: device closed.\n");
 
+	/*---------- Critical Section Start ----------*/
 	kfree(q);
+	/*---------- Critical Section End ----------*/
 	return SUCCESS;
 }
 
@@ -172,10 +177,12 @@ static ssize_t write(struct file *filep, const char *buffer, size_t len, loff_t 
 		remaining_bytes = BUF_LEN - all_msg_size;
 	}
 
+	/*---------- Critical Section Start ----------*/
 	if (all_msg_size == 0){
 		q->top = NULL;
 		q->bottom = NULL;
 	}
+	/*---------- Critical Section End ----------*/
 
 	// Write the input to the device, and update the length of the message.
 	// Work as a FIFO queue, so that multiple messages can be stored.
@@ -199,6 +206,7 @@ static ssize_t write(struct file *filep, const char *buffer, size_t len, loff_t 
 	all_msg_size += len +1;
 
 	ptr->next=NULL;
+	/*---------- Critical Section Start ----------*/
 	if (q->top==NULL && q->bottom==NULL)
 	{
 		q->top = q->bottom = ptr;
@@ -208,6 +216,7 @@ static ssize_t write(struct file *filep, const char *buffer, size_t len, loff_t 
 		q->bottom->next=ptr;
 		q->bottom=ptr;
 	}
+	/*---------- Critical Section End ----------*/
 
 	// Return success upon writing the message to the device without error, and report it to the kernel.
 	printk(KERN_INFO "pa2_in: write stub");

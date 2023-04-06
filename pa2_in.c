@@ -12,6 +12,7 @@
 #include <linux/uaccess.h>	  // User access copy function support.
 #include <linux/slab.h>
 #include <linux/gfp.h>
+#include <linux/mutex.h>
 
 #define DEVICE_NAME "pa2_in" // Device name.
 #define CLASS_NAME "char"	  ///< The device class -- this is a character device driver
@@ -44,10 +45,15 @@ static struct queue
     struct msgs *top;
     struct msgs *bottom;
 }*q;
+EXPORT_SYMBOL(q);
+
+static DEFINE_MUTEX(pa2_mutex);
+EXPORT_SYMBOL(pa2_mutex);
 
 //static char msg[BUF_LEN]; // Message the device will give when asked
 //static int msg_size; // Size of the message written to the device
 static int all_msg_size;// Size of all the messages written to the device
+EXPORT_SYMBOL(all_msg_size);
 /**
  * Prototype functions for file operations.
  */
@@ -139,7 +145,7 @@ static int open(struct inode *inodep, struct file *filep)
 
 	all_msg_size = 0;
 	/*---------- Critical Section End ----------*/
-	
+
 	// Increment to indicate we have now opened the device
 	device_open++;
 

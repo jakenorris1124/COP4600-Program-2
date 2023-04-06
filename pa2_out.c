@@ -12,6 +12,7 @@
 #include <linux/uaccess.h>	  // User access copy function support.
 #include <linux/slab.h>
 #include <linux/gfp.h>
+#include <linux/mutex.h>
 #include "pa2_in.c"
 
 #define DEVICE_NAME "pa2_out" // Device name.
@@ -35,6 +36,7 @@ static struct device *pa2_outDevice = NULL; ///< The device-driver device struct
 
 extern struct queue *q;
 extern static int all_msg_size; // Size of all the messages written to the device
+extern struct mutex pa2_mutex;
 /**
  * Prototype functions for file operations.
  */

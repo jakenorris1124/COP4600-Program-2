@@ -37,6 +37,7 @@ static struct device *pa2_outDevice = NULL; ///< The device-driver device struct
 extern struct queue *q;
 extern static int all_msg_size; // Size of all the messages written to the device
 extern struct mutex pa2_mutex;
+extern wait_queue_head_t wq;
 /**
  * Prototype functions for file operations.
  */

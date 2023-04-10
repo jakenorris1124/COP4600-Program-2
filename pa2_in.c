@@ -235,3 +235,18 @@ static ssize_t write(struct file *filep, const char *buffer, size_t len, loff_t 
 	printk(KERN_INFO "pa2_in: write stub");
 	return SUCCESS;
 }
+
+/*
+ * Acquires the lock by waiting until it is available, then acquiring. If the lock is already available, this function just acquires it.
+ */
+static void get_lock()
+{
+	// If the mutex is locked, wait until it is unlocked
+	if(mutex_is_locked(&pa2_mutex)) 
+	{
+		wait_event_interruptible(wq, !mutex_is_locked(&pa2_mutex));
+	}
+
+	// Acquire the lock once the mutex has been unlocked
+	mutex_lock(&pa2_mutex);
+}

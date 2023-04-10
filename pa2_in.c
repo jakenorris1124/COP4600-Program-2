@@ -111,6 +111,10 @@ int init_module(void)
 		printk(KERN_ALERT "Failed to create the device\n");
 		return PTR_ERR(pa2_inDevice);
 	}
+
+	// Initialize the mutex lock
+	mutex_init(&pa2_mutex);
+
 	printk(KERN_INFO "pa2_in: device class created correctly\n"); // Made it! device was initialized
 
 	return SUCCESS;

@@ -13,7 +13,6 @@
 #include <linux/slab.h>
 #include <linux/gfp.h>
 #include <linux/mutex.h>
-#include "./pa2_in.c"
 
 #define DEVICE_NAME "pa2_out" // Device name.
 #define CLASS_NAME "char"	  ///< The device class -- this is a character device driver
@@ -35,7 +34,7 @@ static struct class *pa2_outClass = NULL;	///< The device-driver class struct po
 static struct device *pa2_outDevice = NULL; ///< The device-driver device struct pointer
 
 extern struct queue *q;
-extern static int all_msg_size; // Size of all the messages written to the device
+extern int all_msg_size; // Size of all the messages written to the device
 extern struct mutex pa2_mutex;
 extern wait_queue_head_t wq;
 /**
@@ -55,6 +54,12 @@ static struct file_operations fops =
 		.release = close,
 		.read = read
 };
+
+/**
+ * Prototype functions for lock operations.
+ */
+extern void get_lock(void);
+extern void release_lock(void);
 
 /**
  * Initializes module at installation

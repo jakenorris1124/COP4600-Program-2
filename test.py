@@ -5,7 +5,7 @@ import time
 def readDevice(loopCount, delay):
     print("Reading from Device")
     for x in range(loopCount):
-        device = open("/dev/charkmod-out", "r")
+        device = open("/dev/pa2_out", "r")
         fileContents = device.read()
         device.close()
         time.sleep(delay/1000)
@@ -13,7 +13,7 @@ def readDevice(loopCount, delay):
 def writeDevice(inputString, loopCount, delay):
     print("Writing to Device")
     for x in range(loopCount):
-        device = open("/dev/charkmod-in", "w")
+        device = open("/dev/pa2_in", "w")
         device.write(inputString)
         device.close()
         time.sleep(delay/1000)

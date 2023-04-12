@@ -13,7 +13,7 @@
 #include <linux/slab.h>
 #include <linux/gfp.h>
 #include <linux/mutex.h>
-#include "pa2_in.c"
+#include "./pa2_in.c"
 
 #define DEVICE_NAME "pa2_out" // Device name.
 #define CLASS_NAME "char"	  ///< The device class -- this is a character device driver

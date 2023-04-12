@@ -148,9 +148,11 @@ static int open(struct inode *inodep, struct file *filep)
 	}
 	
 	/*---------- Critical Section Start ----------*/
+	get_lock();
 	q = kmalloc(sizeof(struct queue), GFP_KERNEL);
 
 	all_msg_size = 0;
+	release_lock();
 	/*---------- Critical Section End ----------*/
 
 	// Increment to indicate we have now opened the device
@@ -173,7 +175,9 @@ static int close(struct inode *inodep, struct file *filep)
 	printk(KERN_INFO "pa2_in: device closed.\n");
 
 	/*---------- Critical Section Start ----------*/
+	get_lock();
 	kfree(q);
+	release_lock();
 	/*---------- Critical Section End ----------*/
 	return SUCCESS;
 }
@@ -191,10 +195,12 @@ static ssize_t write(struct file *filep, const char *buffer, size_t len, loff_t 
 	}
 
 	/*---------- Critical Section Start ----------*/
+	get_lock();
 	if (all_msg_size == 0){
 		q->top = NULL;
 		q->bottom = NULL;
 	}
+	release_lock();
 	/*---------- Critical Section End ----------*/
 
 	// Write the input to the device, and update the length of the message.
@@ -220,6 +226,7 @@ static ssize_t write(struct file *filep, const char *buffer, size_t len, loff_t 
 
 	ptr->next=NULL;
 	/*---------- Critical Section Start ----------*/
+	get_lock();
 	if (q->top==NULL && q->bottom==NULL)
 	{
 		q->top = q->bottom = ptr;
@@ -229,6 +236,7 @@ static ssize_t write(struct file *filep, const char *buffer, size_t len, loff_t 
 		q->bottom->next=ptr;
 		q->bottom=ptr;
 	}
+	release_lock();
 	/*---------- Critical Section End ----------*/
 
 	// Return success upon writing the message to the device without error, and report it to the kernel.

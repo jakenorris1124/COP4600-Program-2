@@ -125,11 +125,13 @@ static int open(struct inode *inodep, struct file *filep)
 	}
 
 	/*---------- Critical Section Start ----------*/
+	get_lock();
 	if (q == NULL)
 	{
 		printk(KERN_INFO "pa2_out: input device has not been intialized.")
 		return -ESRCH
 	}
+	release_lock();
 	/*---------- Critical Section End ----------*/
 	// Increment to indicate we have now opened the device
 	device_open++;
@@ -151,7 +153,9 @@ static int close(struct inode *inodep, struct file *filep)
 	printk(KERN_INFO "pa2_out: device closed.\n");
 
 	/*---------- Critical Section Start ----------*/
+	get_lock();
 	kfree(q);
+	release_lock();
 	/*---------- Critical Section End ----------*/
 	return SUCCESS;
 }
@@ -173,6 +177,7 @@ static ssize_t read(struct file *filep, char *buffer, size_t len, loff_t *offset
 	if (uncopied_bytes == 0)
 	{
 		/*---------- Critical Section Start ----------*/
+		get_lock();
 		if (q->top != NULL)
 		{
 			ptr = q->top;
@@ -185,6 +190,7 @@ static ssize_t read(struct file *filep, char *buffer, size_t len, loff_t *offset
       			all_msg_size -= ptr->msg_size;
 			kfree(ptr);
 		}
+		release_lock();
 		/*---------- Critical Section End ----------*/		
 		printk(KERN_INFO "pa2_out: read stub");
 		return SUCCESS;

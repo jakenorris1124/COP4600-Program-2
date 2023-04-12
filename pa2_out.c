@@ -53,8 +53,7 @@ static struct file_operations fops =
 		.owner = THIS_MODULE,
 		.open = open,
 		.release = close,
-		.read = read,
-		.write = write,
+		.read = read
 };
 
 /**

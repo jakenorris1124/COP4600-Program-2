@@ -76,6 +76,13 @@ static struct file_operations fops =
 };
 
 /**
+ * Prototype functions for lock operations.
+ */
+static void get_lock(void);
+static void release_lock(void);
+
+
+/**
  * Initializes module at installation
  */
 int init_module(void)

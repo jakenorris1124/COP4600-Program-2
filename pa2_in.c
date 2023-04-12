@@ -252,3 +252,12 @@ static void get_lock()
 	printk(KERN_INFO "pa2_in: acquiring the lock");
 	mutex_lock(&pa2_mutex);
 }
+
+/*
+ * Releases the lock.
+ */
+static void release_lock()
+{
+	printk(KERN_INFO "pa2_in: releasing the lock");
+	mutex_unlock(&pa2_mutex);
+}

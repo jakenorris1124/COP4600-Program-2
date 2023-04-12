@@ -133,7 +133,7 @@ static int open(struct inode *inodep, struct file *filep)
 	if (q == NULL)
 	{
 		printk(KERN_INFO "pa2_out: input device has not been intialized.")
-		return -ESRCH
+		return -ESRCH;
 	}
 	release_lock();
 	/*---------- Critical Section End ----------*/

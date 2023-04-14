@@ -195,14 +195,14 @@ static int close(struct inode *inodep, struct file *filep)
 static ssize_t write(struct file *filep, const char *buffer, size_t len, loff_t *offset)
 {
 	// If the file is larger than the amount of bytes the device can hold, return an error.
+	/*---------- Critical Section Start ----------*/
+	get_lock(DEVICE_NAME);
 	int remaining_bytes = -1;
 	if ((len + all_msg_size) > BUF_LEN)
 	{
 		remaining_bytes = BUF_LEN - all_msg_size;
 	}
-
-	/*---------- Critical Section Start ----------*/
-	get_lock(DEVICE_NAME);
+	
 	if (all_msg_size == 0){
 		q->top = NULL;
 		q->bottom = NULL;
@@ -229,7 +229,12 @@ static ssize_t write(struct file *filep, const char *buffer, size_t len, loff_t 
 
 
 	ptr->msg_size = len + 1;
+
+	/*---------- Critical Section Start ----------*/
+	get_lock(DEVICE_NAME);
 	all_msg_size += len +1;
+	release_lock(DEVICE_NAME);
+	/*---------- Critical Section End ----------*/
 
 	ptr->next=NULL;
 	/*---------- Critical Section Start ----------*/

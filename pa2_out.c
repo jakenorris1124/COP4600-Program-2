@@ -13,6 +13,7 @@
 #include <linux/slab.h>
 #include <linux/gfp.h>
 #include <linux/mutex.h>
+#include "pa2_in.h"
 
 #define DEVICE_NAME "pa2_out" // Device name.
 #define CLASS_NAME "char"	  ///< The device class -- this is a character device driver
@@ -54,12 +55,6 @@ static struct file_operations fops =
 		.release = close,
 		.read = read
 };
-
-/**
- * Prototype functions for lock operations.
- */
-extern void get_lock(void);
-extern void release_lock(void);
 
 /**
  * Initializes module at installation

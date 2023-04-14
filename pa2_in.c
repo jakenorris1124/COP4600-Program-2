@@ -40,11 +40,12 @@ static struct msgs
     struct msgs *next;
 };
 
-static struct queue
+struct queue
 {
     struct msgs *top;
     struct msgs *bottom;
 }*q;
+EXPORT_SYMBOL(q);
 
 static DEFINE_MUTEX(pa2_mutex);
 
@@ -52,7 +53,8 @@ static DECLARE_WAIT_QUEUE_HEAD(wq);
 
 //static char msg[BUF_LEN]; // Message the device will give when asked
 //static int msg_size; // Size of the message written to the device
-static int all_msg_size;// Size of all the messages written to the device
+int all_msg_size;// Size of all the messages written to the device
+EXPORT_SYMBOL(all_msg_size);
 
 /**
  * Prototype functions for file operations.
@@ -75,8 +77,10 @@ static struct file_operations fops =
 /**
  * Prototype functions for lock operations.
  */
-static void get_lock(void);
-static void release_lock(void);
+void get_lock(void);
+EXPORT_SYMBOL(get_lock);
+void release_lock(void);
+EXPORT_SYMBOL(release_lock);
 
 
 /**
@@ -250,7 +254,7 @@ static ssize_t write(struct file *filep, const char *buffer, size_t len, loff_t 
 /*
  * Acquires the lock by waiting until it is available, then acquiring. If the lock is already available, this function just acquires it.
  */
-static void get_lock()
+void get_lock()
 {
 	// If the mutex is locked, wait until it is unlocked
 	if(mutex_is_locked(&pa2_mutex)) 
@@ -267,7 +271,7 @@ static void get_lock()
 /*
  * Releases the lock.
  */
-static void release_lock()
+void release_lock()
 {
 	printk(KERN_INFO "pa2_in: releasing the lock");
 	mutex_unlock(&pa2_mutex);

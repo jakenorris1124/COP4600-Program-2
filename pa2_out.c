@@ -167,7 +167,9 @@ static ssize_t read(struct file *filep, char *buffer, size_t len, loff_t *offset
 	// Send the message to user space, and store the number of bytes that could not be copied
 	// On success, this should be zero.
 	/*---------- Critical Section Start ----------*/
+	get_lock();
 	int uncopied_bytes = copy_to_user(buffer, q->top->msg, q->top->msg_size);
+	release_lock();
 	/*---------- Critical Section End ----------*/
 	struct msgs *ptr = kmalloc(sizeof(struct msgs), GFP_KERNEL);
 

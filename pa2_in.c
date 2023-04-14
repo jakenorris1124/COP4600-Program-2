@@ -15,7 +15,7 @@
 #include <linux/mutex.h>
 
 #define DEVICE_NAME "pa2_in" // Device name.
-#define CLASS_NAME "char"	  ///< The device class -- this is a character device driver
+#define CLASS_NAME "char_in"	  ///< The device class -- this is a character device driver
 #define SUCCESS 0
 #define BUF_LEN 1024          // Max length of a message
 

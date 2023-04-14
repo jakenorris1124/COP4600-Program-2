@@ -77,9 +77,9 @@ static struct file_operations fops =
 /**
  * Prototype functions for lock operations.
  */
-void get_lock(void);
+void get_lock(char name[]);
 EXPORT_SYMBOL(get_lock);
-void release_lock(void);
+void release_lock(char name[]);
 EXPORT_SYMBOL(release_lock);
 
 
@@ -155,11 +155,11 @@ static int open(struct inode *inodep, struct file *filep)
 	}
 	
 	/*---------- Critical Section Start ----------*/
-	get_lock();
+	get_lock(DEVICE_NAME);
 	q = kmalloc(sizeof(struct queue), GFP_KERNEL);
 
 	all_msg_size = 0;
-	release_lock();
+	release_lock(DEVICE_NAME);
 	/*---------- Critical Section End ----------*/
 
 	// Increment to indicate we have now opened the device
@@ -182,9 +182,9 @@ static int close(struct inode *inodep, struct file *filep)
 	printk(KERN_INFO "pa2_in: device closed.\n");
 
 	/*---------- Critical Section Start ----------*/
-	get_lock();
+	get_lock(DEVICE_NAME);
 	kfree(q);
-	release_lock();
+	release_lock(DEVICE_NAME);
 	/*---------- Critical Section End ----------*/
 	return SUCCESS;
 }
@@ -202,12 +202,12 @@ static ssize_t write(struct file *filep, const char *buffer, size_t len, loff_t 
 	}
 
 	/*---------- Critical Section Start ----------*/
-	get_lock();
+	get_lock(DEVICE_NAME);
 	if (all_msg_size == 0){
 		q->top = NULL;
 		q->bottom = NULL;
 	}
-	release_lock();
+	release_lock(DEVICE_NAME);
 	/*---------- Critical Section End ----------*/
 
 	// Write the input to the device, and update the length of the message.
@@ -233,7 +233,7 @@ static ssize_t write(struct file *filep, const char *buffer, size_t len, loff_t 
 
 	ptr->next=NULL;
 	/*---------- Critical Section Start ----------*/
-	get_lock();
+	get_lock(DEVICE_NAME);
 	if (q->top==NULL && q->bottom==NULL)
 	{
 		q->top = q->bottom = ptr;
@@ -243,7 +243,7 @@ static ssize_t write(struct file *filep, const char *buffer, size_t len, loff_t 
 		q->bottom->next=ptr;
 		q->bottom=ptr;
 	}
-	release_lock();
+	release_lock(DEVICE_NAME);
 	/*---------- Critical Section End ----------*/
 
 	// Return success upon writing the message to the device without error, and report it to the kernel.
@@ -254,25 +254,25 @@ static ssize_t write(struct file *filep, const char *buffer, size_t len, loff_t 
 /*
  * Acquires the lock by waiting until it is available, then acquiring. If the lock is already available, this function just acquires it.
  */
-void get_lock()
+void get_lock(char name[])
 {
 	// If the mutex is locked, wait until it is unlocked
 	if(mutex_is_locked(&pa2_mutex)) 
 	{
-		printk(KERN_INFO "%s: waiting for lock", DEVICE_NAME);
+		printk(KERN_INFO "%s: waiting for lock", name);
 		wait_event_interruptible(wq, !mutex_is_locked(&pa2_mutex));
 	}
 
 	// Acquire the lock once the mutex has been unlocked
-	printk(KERN_INFO "%s: acquiring the lock", DEVICE_NAME);
+	printk(KERN_INFO "%s: acquiring the lock", name);
 	mutex_lock(&pa2_mutex);
 }
 
 /*
  * Releases the lock.
  */
-void release_lock()
+void release_lock(char name[])
 {
-	printk(KERN_INFO "%s: releasing the lock", DEVICE_NAME);
+	printk(KERN_INFO "%s: releasing the lock", name);
 	mutex_unlock(&pa2_mutex);
 }

@@ -3,8 +3,8 @@ extern struct wait_queue_head wq;
 extern struct queue *q;
 extern int all_msg_size;
 
-void get_lock(void);
-void release_lock(void);
+void get_lock(char name[]);
+void release_lock(char name[]);
 
 struct queue
 {

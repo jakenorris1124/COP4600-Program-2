@@ -259,12 +259,12 @@ void get_lock()
 	// If the mutex is locked, wait until it is unlocked
 	if(mutex_is_locked(&pa2_mutex)) 
 	{
-		printk(KERN_INFO "pa2_in: waiting for lock");
+		printk(KERN_INFO DEVICE_NAME + ": waiting for lock");
 		wait_event_interruptible(wq, !mutex_is_locked(&pa2_mutex));
 	}
 
 	// Acquire the lock once the mutex has been unlocked
-	printk(KERN_INFO "pa2_in: acquiring the lock");
+	printk(KERN_INFO DEVICE_NAME + ": acquiring the lock");
 	mutex_lock(&pa2_mutex);
 }
 
@@ -273,6 +273,6 @@ void get_lock()
  */
 void release_lock()
 {
-	printk(KERN_INFO "pa2_in: releasing the lock");
+	printk(KERN_INFO DEVICE_NAME + ": releasing the lock");
 	mutex_unlock(&pa2_mutex);
 }

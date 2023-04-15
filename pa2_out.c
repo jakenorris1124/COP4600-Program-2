@@ -108,6 +108,7 @@ void cleanup_module(void)
 	unregister_chrdev(major_number, DEVICE_NAME);		  // unregister the major number
 	printk(KERN_INFO "pa2_out: Goodbye from the LKM!\n");
 	unregister_chrdev(major_number, DEVICE_NAME);
+	kfree(q);
 	return;
 }
 
@@ -123,15 +124,20 @@ static int open(struct inode *inodep, struct file *filep)
 		return -EBUSY;
 	}
 
-	/*---------- Critical Section Start ----------*/
-	get_lock(DEVICE_NAME);
+	if(!mutex_trylock(&pa2_mutex))
+	{
+		printk(KERN_ALERT "%s: device is in use by another process, waiting for it to finish", DEVICE_NAME);
+		wait_event_interruptible(wq, mutex_trylock(&pa2_mutex));
+	}
+
+	printk(KERN_INFO "%s: acquired lock\n", DEVICE_NAME);
+
 	if (q == NULL)
 	{
 		printk(KERN_INFO "pa2_out: input device has not been intialized.");
 		return -ESRCH;
 	}
-	release_lock(DEVICE_NAME);
-	/*---------- Critical Section End ----------*/
+
 	// Increment to indicate we have now opened the device
 	device_open++;
 
@@ -148,14 +154,12 @@ static int close(struct inode *inodep, struct file *filep)
 	// Decrement to indicate the device is now closed
 	device_open--;
 
+	mutex_unlock(&pa2_mutex);
+	printk(KERN_INFO "%s: released lock\n", DEVICE_NAME);
+
 	// Return success upon opening the device without error, and report it to the kernel.
 	printk(KERN_INFO "pa2_out: device closed.\n");
 
-	/*---------- Critical Section Start ----------*/
-	get_lock(DEVICE_NAME);
-	kfree(q);
-	release_lock(DEVICE_NAME);
-	/*---------- Critical Section End ----------*/
 	return SUCCESS;
 }
 
@@ -166,19 +170,14 @@ static ssize_t read(struct file *filep, char *buffer, size_t len, loff_t *offset
 {
 	// Send the message to user space, and store the number of bytes that could not be copied
 	// On success, this should be zero.
-	/*---------- Critical Section Start ----------*/
-	get_lock(DEVICE_NAME);
 	int uncopied_bytes = copy_to_user(buffer, q->top->msg, q->top->msg_size);
-	release_lock(DEVICE_NAME);
-	/*---------- Critical Section End ----------*/
+
 	struct msgs *ptr = kmalloc(sizeof(struct msgs), GFP_KERNEL);
 
 	// If the message was successfully sent to user space, report this
 	// to the kernel and return success.
 	if (uncopied_bytes == 0)
 	{
-		/*---------- Critical Section Start ----------*/
-		get_lock(DEVICE_NAME);
 		if (q->top != NULL)
 		{
 			ptr = q->top;
@@ -191,8 +190,6 @@ static ssize_t read(struct file *filep, char *buffer, size_t len, loff_t *offset
       			all_msg_size -= ptr->msg_size;
 			kfree(ptr);
 		}
-		release_lock(DEVICE_NAME);
-		/*---------- Critical Section End ----------*/		
 		printk(KERN_INFO "pa2_out: read stub");
 		return SUCCESS;
 	}

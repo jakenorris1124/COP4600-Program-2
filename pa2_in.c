@@ -47,9 +47,11 @@ struct queue
 }*q;
 EXPORT_SYMBOL(q);
 
-static DEFINE_MUTEX(pa2_mutex);
+DEFINE_MUTEX(pa2_mutex);
+EXPORT_SYMBOL(pa2_mutex);
 
-static DECLARE_WAIT_QUEUE_HEAD(wq);
+DECLARE_WAIT_QUEUE_HEAD(wq);
+EXPORT_SYMBOL(wq);
 
 //static char msg[BUF_LEN]; // Message the device will give when asked
 //static int msg_size; // Size of the message written to the device
@@ -73,14 +75,6 @@ static struct file_operations fops =
 		.release = close,
 		.write = write,
 };
-
-/**
- * Prototype functions for lock operations.
- */
-void get_lock(char name[]);
-EXPORT_SYMBOL(get_lock);
-void release_lock(char name[]);
-EXPORT_SYMBOL(release_lock);
 
 
 /**
@@ -139,6 +133,7 @@ void cleanup_module(void)
 	unregister_chrdev(major_number, DEVICE_NAME);		  // unregister the major number
 	printk(KERN_INFO "pa2_in: Goodbye from the LKM!\n");
 	unregister_chrdev(major_number, DEVICE_NAME);
+	kfree(q);
 	return;
 }
 
@@ -153,14 +148,18 @@ static int open(struct inode *inodep, struct file *filep)
 		printk(KERN_INFO "pa2_in: device is busy.\n");
 		return -EBUSY;
 	}
+
+	if(!mutex_trylock(&pa2_mutex))
+	{
+		printk(KERN_ALERT "%s: device is in use by another process, waiting for it to finish", DEVICE_NAME);
+		wait_event_interruptible(wq, mutex_trylock(&pa2_mutex));
+	}
+
+	printk(KERN_INFO "%s: acquired lock\n", DEVICE_NAME);
 	
-	/*---------- Critical Section Start ----------*/
-	get_lock(DEVICE_NAME);
 	q = kmalloc(sizeof(struct queue), GFP_KERNEL);
 
 	all_msg_size = 0;
-	release_lock(DEVICE_NAME);
-	/*---------- Critical Section End ----------*/
 
 	// Increment to indicate we have now opened the device
 	device_open++;
@@ -178,14 +177,11 @@ static int close(struct inode *inodep, struct file *filep)
 	// Decrement to indicate the device is now closed
 	device_open--;
 
+	mutex_unlock(&pa2_mutex);
+	printk(KERN_INFO "%s: released lock\n", DEVICE_NAME);
+
 	// Return success upon opening the device without error, and report it to the kernel.
 	printk(KERN_INFO "pa2_in: device closed.\n");
-
-	/*---------- Critical Section Start ----------*/
-	get_lock(DEVICE_NAME);
-	kfree(q);
-	release_lock(DEVICE_NAME);
-	/*---------- Critical Section End ----------*/
 	return SUCCESS;
 }
 
@@ -195,8 +191,6 @@ static int close(struct inode *inodep, struct file *filep)
 static ssize_t write(struct file *filep, const char *buffer, size_t len, loff_t *offset)
 {
 	// If the file is larger than the amount of bytes the device can hold, return an error.
-	/*---------- Critical Section Start ----------*/
-	get_lock(DEVICE_NAME);
 	int remaining_bytes = -1;
 	if ((len + all_msg_size) > BUF_LEN)
 	{
@@ -207,8 +201,6 @@ static ssize_t write(struct file *filep, const char *buffer, size_t len, loff_t 
 		q->top = NULL;
 		q->bottom = NULL;
 	}
-	release_lock(DEVICE_NAME);
-	/*---------- Critical Section End ----------*/
 
 	// Write the input to the device, and update the length of the message.
 	// Work as a FIFO queue, so that multiple messages can be stored.
@@ -229,16 +221,10 @@ static ssize_t write(struct file *filep, const char *buffer, size_t len, loff_t 
 
 
 	ptr->msg_size = len + 1;
-
-	/*---------- Critical Section Start ----------*/
-	get_lock(DEVICE_NAME);
 	all_msg_size += len +1;
-	release_lock(DEVICE_NAME);
-	/*---------- Critical Section End ----------*/
 
 	ptr->next=NULL;
-	/*---------- Critical Section Start ----------*/
-	get_lock(DEVICE_NAME);
+
 	if (q->top==NULL && q->bottom==NULL)
 	{
 		q->top = q->bottom = ptr;
@@ -248,36 +234,8 @@ static ssize_t write(struct file *filep, const char *buffer, size_t len, loff_t 
 		q->bottom->next=ptr;
 		q->bottom=ptr;
 	}
-	release_lock(DEVICE_NAME);
-	/*---------- Critical Section End ----------*/
 
 	// Return success upon writing the message to the device without error, and report it to the kernel.
 	printk(KERN_INFO "pa2_in: write stub");
 	return SUCCESS;
-}
-
-/*
- * Acquires the lock by waiting until it is available, then acquiring. If the lock is already available, this function just acquires it.
- */
-void get_lock(char name[])
-{
-	// If the mutex is locked, wait until it is unlocked
-	if(mutex_is_locked(&pa2_mutex)) 
-	{
-		printk(KERN_INFO "%s: waiting for lock", name);
-		wait_event_interruptible(wq, !mutex_is_locked(&pa2_mutex));
-	}
-
-	// Acquire the lock once the mutex has been unlocked
-	printk(KERN_INFO "%s: acquiring the lock", name);
-	mutex_lock(&pa2_mutex);
-}
-
-/*
- * Releases the lock.
- */
-void release_lock(char name[])
-{
-	printk(KERN_INFO "%s: releasing the lock", name);
-	mutex_unlock(&pa2_mutex);
 }

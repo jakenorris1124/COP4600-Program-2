@@ -123,7 +123,9 @@ static int open(struct inode *inodep, struct file *filep)
 		printk(KERN_INFO "pa2_out: device is busy.\n");
 		return -EBUSY;
 	}
-
+	
+	/*---------- Critical Section Start ----------*/
+	printk(KERN_INFO "%s: entering critical section", DEVICE_NAME);
 	if(!mutex_trylock(&pa2_mutex))
 	{
 		printk(KERN_ALERT "%s: device is in use by another process, waiting for it to finish", DEVICE_NAME);

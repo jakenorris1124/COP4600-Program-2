@@ -155,6 +155,7 @@ static int close(struct inode *inodep, struct file *filep)
 	device_open--;
 
 	mutex_unlock(&pa2_mutex);
+	wake_up(&wq);
 	printk(KERN_INFO "%s: released lock\n", DEVICE_NAME);
 
 	// Return success upon opening the device without error, and report it to the kernel.
@@ -170,6 +171,12 @@ static ssize_t read(struct file *filep, char *buffer, size_t len, loff_t *offset
 {
 	// Send the message to user space, and store the number of bytes that could not be copied
 	// On success, this should be zero.
+	if (buffer == NULL || q->top == NULL)
+	{
+		printk(KERN_INFO "%s: buffer is empty", DEVICE_NAME);
+		return SUCCESS;
+	}
+	
 	int uncopied_bytes = copy_to_user(buffer, q->top->msg, q->top->msg_size);
 
 	struct msgs *ptr = kmalloc(sizeof(struct msgs), GFP_KERNEL);

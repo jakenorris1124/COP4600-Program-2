@@ -178,6 +178,7 @@ static int close(struct inode *inodep, struct file *filep)
 	device_open--;
 
 	mutex_unlock(&pa2_mutex);
+	wake_up(&wq);
 	printk(KERN_INFO "%s: released lock\n", DEVICE_NAME);
 
 	// Return success upon opening the device without error, and report it to the kernel.
@@ -237,5 +238,5 @@ static ssize_t write(struct file *filep, const char *buffer, size_t len, loff_t 
 
 	// Return success upon writing the message to the device without error, and report it to the kernel.
 	printk(KERN_INFO "pa2_in: write stub");
-	return SUCCESS;
+	return len;
 }

@@ -178,7 +178,7 @@ static ssize_t read(struct file *filep, char *buffer, size_t len, loff_t *offset
 	// On success, this should be zero.
 	if (buffer == NULL || q->top == NULL)
 	{
-		printk(KERN_INFO "%s: buffer is empty", DEVICE_NAME);
+		printk(KERN_INFO "%s: Buffer is empty", DEVICE_NAME);
 		return SUCCESS;
 	}
 	
@@ -193,6 +193,7 @@ static ssize_t read(struct file *filep, char *buffer, size_t len, loff_t *offset
 		if (q->top != NULL)
 		{
 			ptr = q->top;
+			printk(KERN_INFO "%s: Reading %d bytes", DEVICE_NAME, ptr->msg_size);
 			q->top = q->top->next;
 			if (q->top == NULL)
 			{

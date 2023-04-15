@@ -206,6 +206,15 @@ static ssize_t write(struct file *filep, const char *buffer, size_t len, loff_t 
 	if (all_msg_size == 0){
 		q->top = NULL;
 		q->bottom = NULL;
+		printk(KERN_INFO "Buffer is empty\n");
+		
+	}
+	
+	if (all_msg_size >= BUF_LEN){
+		q->top = NULL;
+		q->bottom = NULL;
+		printk(KERN_INFO "Buffer is full\n");
+		
 	}
 
 	// Write the input to the device, and update the length of the message.
@@ -217,17 +226,22 @@ static ssize_t write(struct file *filep, const char *buffer, size_t len, loff_t 
 		int msg_mem_size = (len + 1) * sizeof(char);
 		ptr->msg = kmalloc(msg_mem_size, GFP_KERNEL);
 		sprintf(ptr->msg, "%s", buffer);
+		ptr->msg_size = len + 1;
+		all_msg_size += len +1;
+		printk(KERN_INFO "Writing %d bytes\n", len + 1);
 	}
 	else
 	{
 		int msg_mem_size = (remaining_bytes + 1) * sizeof(char);
 		ptr->msg = kmalloc(msg_mem_size, GFP_KERNEL);
 		sprintf(ptr->msg, "%.*s", remaining_bytes, buffer);
+		ptr->msg_size = remaining_bytes + 1;
+		all_msg_size += remaining_bytes + 1;
+		printk(KERN_INFO "Writing %d bytes\n", remaining_bytes + 1);
+		printk(KERN_INFO "Not enough space left in the buffer, dropping the rest.\n");
+		
 	}
 
-
-	ptr->msg_size = len + 1;
-	all_msg_size += len +1;
 
 	ptr->next=NULL;
 

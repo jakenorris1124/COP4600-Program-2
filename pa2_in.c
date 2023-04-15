@@ -149,6 +149,8 @@ static int open(struct inode *inodep, struct file *filep)
 		return -EBUSY;
 	}
 
+	/*---------- Critical Section Start ----------*/
+	printk(KERN_INFO "%s: entering critical section", DEVICE_NAME);
 	if(!mutex_trylock(&pa2_mutex))
 	{
 		printk(KERN_ALERT "%s: device is in use by another process, waiting for it to finish", DEVICE_NAME);
@@ -156,7 +158,7 @@ static int open(struct inode *inodep, struct file *filep)
 	}
 
 	printk(KERN_INFO "%s: acquired lock\n", DEVICE_NAME);
-	
+
 	q = kmalloc(sizeof(struct queue), GFP_KERNEL);
 
 	all_msg_size = 0;
@@ -181,13 +183,16 @@ static int close(struct inode *inodep, struct file *filep)
 	wake_up(&wq);
 	printk(KERN_INFO "%s: released lock\n", DEVICE_NAME);
 
+	printk(KERN_INFO "%s: exiting critical section", DEVICE_NAME);
+	/*---------- Critical Section End ----------*/
+
 	// Return success upon opening the device without error, and report it to the kernel.
 	printk(KERN_INFO "pa2_in: device closed.\n");
 	return SUCCESS;
 }
 
 /*
- * Writes to the device
+ * Writes to the device. This whole function is encapsulated in the critical section.
  */
 static ssize_t write(struct file *filep, const char *buffer, size_t len, loff_t *offset)
 {

@@ -158,6 +158,9 @@ static int close(struct inode *inodep, struct file *filep)
 	wake_up(&wq);
 	printk(KERN_INFO "%s: released lock\n", DEVICE_NAME);
 
+	printk(KERN_INFO "%s: exiting critical section", DEVICE_NAME);
+	/*---------- Critical Section End ----------*/
+
 	// Return success upon opening the device without error, and report it to the kernel.
 	printk(KERN_INFO "pa2_out: device closed.\n");
 
@@ -165,7 +168,7 @@ static int close(struct inode *inodep, struct file *filep)
 }
 
 /*
- * Reads from device, displays in userspace, and deletes the read data
+ * Reads from device, displays in userspace, and deletes the read data. This whole function is encapsulated in the critical section.
  */
 static ssize_t read(struct file *filep, char *buffer, size_t len, loff_t *offset)
 {
